@@ -22,6 +22,7 @@ rerank_models/
 ├── test_rerankers.py    # 单 GPU 测试脚本，验证模型推理和 QPS
 ├── test_load.py         # 本地（如MacBook）压力测试脚本
 ├── Dockerfile           # 构建镜像（含 CUDA、Python、依赖、应用等）
+├── MODEL_DOWNLOAD.md    # 本地部署模型指南
 ├── docker-compose.yml   # 使用 NVIDIA runtime 启动服务
 ├── requirements.txt     # Python 依赖列表
 └── README.md                   
