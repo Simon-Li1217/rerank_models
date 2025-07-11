@@ -1,4 +1,5 @@
 # app/main.py
+# 单线程的 FastAPI 应用，未实现多线程或异步处理
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.ranker import ModelManager

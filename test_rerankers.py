@@ -1,7 +1,4 @@
 # test_rerankers.py
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# 测试脚本：验证本地模型的推理与QPS性能
 """
 单卡测试脚本：依次验证 bge-reranker-base、Qwen3-Reranker-4B、Qwen3-Reranker-8B 
 在各自单张 GPU 上的推理与 QPS 性能。
@@ -25,29 +22,24 @@ import torch
 from sentence_transformers import CrossEncoder
 from modelscope import AutoTokenizer, AutoModelForCausalLM
 
-# ----------------------------
+
 # GPU 分配: 每个模型固定使用一张 GPU
-# ----------------------------
 DEVICE_BGE     = torch.device("cuda:0")  # bge-reranker-base
 DEVICE_QWEN4B  = torch.device("cuda:0")  # Qwen3-Reranker-4B
 DEVICE_QWEN8B  = torch.device("cuda:1")  # Qwen3-Reranker-8B
 
-# ----------------------------
-# GPU 监控和验证函数
-# ----------------------------
+# GPU 监控
 def check_gpu_availability():
     """检查GPU可用性和CUDA环境"""
-    print("🔍 GPU环境检查:")
-    print(f"   CUDA可用: {torch.cuda.is_available()}")
+    print(f"CUDA: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
-        print(f"   GPU数量: {torch.cuda.device_count()}")
+        print(f"GPU数量: {torch.cuda.device_count()}")
         for i in range(torch.cuda.device_count()):
-            print(f"   GPU {i}: {torch.cuda.get_device_name(i)}")
-            print(f"   显存总量: {torch.cuda.get_device_properties(i).total_memory / 1024**3:.1f} GB")
+            print(f"GPU {i}: {torch.cuda.get_device_name(i)}")
+            print(f"显存总量: {torch.cuda.get_device_properties(i).total_memory / 1024**3:.1f} GB")
     print()
-
+# 获取指定GPU的显存使用情况
 def get_gpu_memory(device):
-    """获取指定GPU的显存使用情况"""
     if isinstance(device, torch.device):
         device_id = device.index
     else:
@@ -59,42 +51,36 @@ def get_gpu_memory(device):
         return allocated, reserved
     return 0, 0
 
+# 打印GPU使用情况
 def print_gpu_usage(device, stage=""):
-    """打印GPU使用情况"""
     allocated, reserved = get_gpu_memory(device)
     device_id = device.index if isinstance(device, torch.device) else device
-    print(f"   📊 GPU {device_id} {stage}: 已分配 {allocated:.2f}GB, 已保留 {reserved:.2f}GB")
-
-def verify_model_on_gpu(model, device):
-    """验证模型是否真正在GPU上"""
-    device_id = device.index if isinstance(device, torch.device) else device
+    print(f"GPU {device_id} {stage}: 已分配 {allocated:.2f}GB, 已保留 {reserved:.2f}GB")
     
-    # 检查模型参数所在设备
+# 验证模型是否在指定GPU上
+def verify_model_on_gpu(model, device):
+    device_id = device.index if isinstance(device, torch.device) else device
     model_devices = set()
     for param in model.parameters():
         model_devices.add(param.device)
-    
-    print(f"   ✅ 模型参数所在设备: {model_devices}")
+    print(f"模型参数所在设备: {model_devices}")
     
     # 检查是否在指定GPU上
     expected_device = torch.device(f"cuda:{device_id}")
     if expected_device in model_devices:
-        print(f"   ✅ 模型已正确加载到 GPU {device_id}")
+        print(f"模型已正确加载到 GPU {device_id}")
         return True
     else:
-        print(f"   ❌ 模型未在 GPU {device_id} 上！")
+        print(f"模型未在 GPU {device_id} 上！")
         return False
 
-# ----------------------------
+
 # 模型路径
-# ----------------------------
 BGE_MODEL   = "./models/bge-reranker-base"
 QWEN3_4B    = "./models/Qwen3-Reranker-4B"
 QWEN3_8B    = "./models/Qwen3-Reranker-8B"
 
-# ----------------------------
-# Qwen3-Reranker 前缀与后缀固定字符串
-# ----------------------------
+# Qwen3-Reranker Model Scope官方规定的前缀与后缀固定字符串
 PREFIX = (
     "<|im_start|>system\n"
     "Judge whether the Document meets the requirements based on the Query and the Instruct provided. "
@@ -110,9 +96,8 @@ SUFFIX = (
 )
 MAX_LEN = 8192
 
-# ----------------------------
+
 # bge-reranker-base 测试
-# ----------------------------
 def test_bge(pairs):
     print(f"=== Testing bge-reranker-base on {DEVICE_BGE} ===")
     # 记录加载前的GPU状态
@@ -126,7 +111,7 @@ def test_bge(pairs):
     print_gpu_usage(DEVICE_BGE, "加载后")
     
     # 推理测试
-    print("🚀 开始推理...")
+    print("开始推理...")
     start = time.perf_counter()
     scores = model.predict(pairs)
     end = time.perf_counter()
@@ -137,9 +122,7 @@ def test_bge(pairs):
         print(f"[bge] “{q}” ↔ “{d}” ⇒ {s:.4f}")
     print(f"bge-reranker-base QPS: {len(pairs)/(end-start):.1f}\n")
 
-# ----------------------------
 # Qwen3-Reranker 测试
-# ----------------------------
 def test_qwen(name, model_path, device, pairs):
     print(f"=== Testing {name} on {device} ===")
     
@@ -178,7 +161,7 @@ def test_qwen(name, model_path, device, pairs):
         full_texts.append(text)
 
     # 推理测试
-    print("🚀 开始推理...")
+    print("开始推理...")
     start = time.perf_counter()
     inputs = tokenizer(
         full_texts,
@@ -192,12 +175,12 @@ def test_qwen(name, model_path, device, pairs):
     
     # 验证输入数据是否在正确的GPU上
     for key, tensor in inputs.items():
-        print(f"   📍 输入 {key} 在设备: {tensor.device}")
+        print(f"输入 {key} 在设备: {tensor.device}")
     
     # 推理并提取最后一 token logits
     with torch.no_grad():
         logits = model(**inputs).logits[:, -1, :]
-        print(f"   📍 输出 logits 在设备: {logits.device}")
+        print(f"输出 logits 在设备: {logits.device}")
         neg = logits[:, false_id]
         pos = logits[:, true_id]
         scores = torch.nn.functional.log_softmax(
@@ -211,9 +194,7 @@ def test_qwen(name, model_path, device, pairs):
         print(f"[{name}] “{q}” ↔ “{d}” ⇒ {s:.4f}")
     print(f"{name} QPS: {len(pairs)/(end-start):.1f}\n")
 
-# ----------------------------
-# 主流程
-# ----------------------------
+# 主函数入口
 if __name__ == '__main__':
     check_gpu_availability()  # 检查GPU可用性
     sample_pairs = [
@@ -225,4 +206,4 @@ if __name__ == '__main__':
     test_bge(sample_pairs)
     test_qwen('Qwen3-Reranker-4B', QWEN3_4B, DEVICE_QWEN4B, sample_pairs)
     test_qwen('Qwen3-Reranker-8B', QWEN3_8B, DEVICE_QWEN8B, sample_pairs)
-    print("✅ All models tested.")
+    print("所有模型测试完成。")  # 完成提示
