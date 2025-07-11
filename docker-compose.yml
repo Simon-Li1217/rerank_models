@@ -1,0 +1,17 @@
+# version: "3.8"
+
+services:
+  reranker-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: reranker-service:latest
+    container_name: reranker-container
+    runtime: nvidia  
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
