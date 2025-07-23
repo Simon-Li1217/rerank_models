@@ -15,9 +15,6 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install /tmp/wheels/*.whl
-
-# 升级 pip 并确保 wheel 支持
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
