@@ -15,7 +15,6 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 
 WORKDIR /app
 COPY requirements.txt .
-COPY ./transformers_wheel /tmp/wheels
 RUN pip install /tmp/wheels/*.whl
 
 # 升级 pip 并确保 wheel 支持
