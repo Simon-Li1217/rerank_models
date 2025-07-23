@@ -1,0 +1,38 @@
+name: Build and Publish Docker Image
+#	•	任何 git push master 都会触发这条流水线。
+#	•	在 GitHub 的 runner（畅通网络环境）上构建镜像、然后推送到 ghcr.io/Simon-Li1217/rerank_models:latest。
+on:
+  push:
+    branches:
+      - master   # 或 main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU (optional, for multi-arch)
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/Simon-Li1217/rerank_models:latest
+
+      - name: Image digest
+        run: echo "Image available at ghcr.io/Simon-Li1217/rerank_models:latest"
